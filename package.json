@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@clack/prompts": "^0.10.1",
     "dedent": "^1.5.3",
     "dotenv": "^16.4.7"
   },

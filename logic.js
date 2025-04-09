@@ -1,5 +1,6 @@
 import dedent from 'dedent';
 import 'dotenv/config';
+import { intro, outro, text, confirm, spinner, log } from '@clack/prompts';
 
 const parseExaUserString = (raw_string) => {
   try {
@@ -205,5 +206,53 @@ ${tweetTexts}
 };
 // Example usage
 
-const [profile, cleanUsername] = await fetchTwitterProfile('liszechung');
-await analyzeUserTweets(profile, cleanUsername);
+intro(
+  "This is the program to analyse Twitter user's tweets and personality using the OCEAN (Big Five) model. Two users will be analyzed. "
+);
+
+let confirmed = false;
+let firstUser;
+let secondUser;
+
+while (!confirmed) {
+  firstUser = await text({
+    message: 'Enter the username of the first Twitter user (e.g., @username):',
+    validate(value) {
+      if (!value.trim()) return 'Username cannot be empty.';
+      return undefined;
+    },
+  });
+
+  secondUser = await text({
+    message: 'Enter the username of the second Twitter user (e.g., @username):',
+    validate(value) {
+      if (!value.trim()) return 'Username cannot be empty.';
+      return undefined;
+    },
+  });
+
+  confirmed = await confirm({
+    message: `You entered the first user as "${firstUser}" and second user as "${secondUser}". Confirm or re-enter the username:`,
+    validate(value) {
+      if (!value.trim()) return 'Username cannot be empty.';
+      return undefined;
+    },
+  });
+}
+
+const s = spinner();
+
+for (const user of [firstUser, secondUser]) {
+  s.start(`Fetching profile for ${user}...`);
+  const [profile, cleanUsername] = await fetchTwitterProfile(user);
+  if (!profile) {
+    console.error(`Failed to fetch profile for ${user}`);
+    continue;
+  }
+
+  log.step(`Fetched profile for @${cleanUsername}, now analyzing...`);
+  await analyzeUserTweets(profile, cleanUsername);
+  s.stop(`Finish alayzing profile for ${user}...`);
+}
+
+outro('Done! All profiles have been analyzed.');
