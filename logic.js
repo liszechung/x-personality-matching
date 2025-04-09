@@ -7,9 +7,7 @@ const parseExaUserString = (raw_string) => {
       tweets: [],
     };
     const base_yml = raw_string;
-    console.log(base_yml);
     const profile_yml = base_yml.match(/^.*?statuses_count:\s*\d+/)?.[0];
-    console.log(profile_yml);
     const tweets_yml = base_yml
       .replace(profile_yml, '')
       .replace('| location:', '')
@@ -37,10 +35,7 @@ const parseExaUserString = (raw_string) => {
       'retweet_count',
     ];
     for (const [key, pattern] of Object.entries(PROFILE_PATTERNS)) {
-      console.log(key);
-      console.log(pattern);
       const match = profile_yml?.match(pattern);
-      console.log(match);
       if (match) {
         Object.assign(composed_object, {
           [key]: num_keys.includes(key)
@@ -119,12 +114,6 @@ const fetchTwitterProfile = async (username) => {
     });
 
     const rawData = await response.json();
-
-    // let profile = rawData.results[0];
-    // if (!profile) {
-    //   console.error('No profile found for the given username.');
-    //   return null;
-    // }
 
     const data = rawData.data ? rawData.data : rawData;
 
