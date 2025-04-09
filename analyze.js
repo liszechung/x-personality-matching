@@ -2,7 +2,7 @@ import dedent from 'dedent';
 import 'dotenv/config';
 import { intro, outro, text, confirm, spinner, log } from '@clack/prompts';
 
-const parseExaUserString = (raw_string) => {
+export const parseExaUserString = (raw_string) => {
   try {
     let composed_object = {
       tweets: [],
@@ -98,7 +98,7 @@ const parseExaUserString = (raw_string) => {
   }
 };
 
-const fetchTwitterProfile = async (username) => {
+export const fetchTwitterProfile = async (username) => {
   try {
     const cleanUsername = username.trim().replace(/^@/, '');
     const response = await fetch('https://api.exa.ai/contents', {
@@ -135,7 +135,7 @@ const fetchTwitterProfile = async (username) => {
   }
 };
 
-const analyzeUserTweets = async (profile, cleanUsername) => {
+export const analyzeUserTweets = async (profile, cleanUsername) => {
   const profile_str = JSON.stringify(
     { ...profile, tweets: undefined },
     null,
@@ -208,7 +208,7 @@ ${tweetTexts}
 };
 // Example usage
 
-const parseAnalysisResponse = (responseContent) => {
+export const parseAnalysisResponse = (responseContent) => {
   try {
     const cleanedResponseContent = responseContent.replace(/```json|```/g, '');
 
@@ -234,62 +234,36 @@ const parseAnalysisResponse = (responseContent) => {
   }
 };
 
-intro(
-  "This is the program to analyse Twitter user's tweets and personality using the OCEAN (Big Five) model. Two users will be analyzed. "
-);
-
-let confirmed = false;
-let firstUser;
-let secondUser;
-
-while (!confirmed) {
-  firstUser = await text({
-    message: 'Enter the username of the first Twitter user (e.g., @username):',
-    validate(value) {
-      if (!value.trim()) return 'Username cannot be empty.';
-      return undefined;
+export const checkCouple = async (user1, user2) => {
+  const messages = [
+    {
+      role: 'system',
+      content: dedent`there are 2 persons with OCEAN score like this
+assuming the max score is 100
+    ${user1.analysis.scores.toString()} , ${user2.analysis.scores.toString()}
+will these 2 person be a match as a couple
+      `.trim(),
     },
+  ];
+
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'grok-2-latest',
+      messages, // Adjust per XAI’s format
+    }),
   });
 
-  secondUser = await text({
-    message: 'Enter the username of the second Twitter user (e.g., @username):',
-    validate(value) {
-      if (!value.trim()) return 'Username cannot be empty.';
-      return undefined;
-    },
-  });
-
-  confirmed = await confirm({
-    message: `You entered the first user as "${firstUser}" and second user as "${secondUser}". Confirm or re-enter the username:`,
-    validate(value) {
-      if (!value.trim()) return 'Username cannot be empty.';
-      return undefined;
-    },
-  });
-}
-
-const s = spinner();
-
-let userResults = [];
-
-for (const user of [firstUser, secondUser]) {
-  s.start(`Fetching profile for ${user}...`);
-  const [profile, cleanUsername] = await fetchTwitterProfile(user);
-  if (!profile) {
-    console.error(`Failed to fetch profile for ${user}`);
-    continue;
+  const responseData = await response.json();
+  if (responseData.error) {
+    console.error('Error analyzing tweets:', responseData.error);
+    return null;
   }
 
-  log.step(`Fetched profile for @${cleanUsername}, now analyzing...`);
-  const result = await analyzeUserTweets(profile, cleanUsername);
-  const parsedResult = parseAnalysisResponse(result);
-
-  userResults.push({
-    username: cleanUsername,
-    analysis: parsedResult,
-  });
-  s.stop(`Finish alayzing profile for ${user}...`);
-}
-
-console.log(JSON.stringify(userResults, null, 3));
-outro('Done! All profiles have been analyzed.');
+  const choices = responseData.choices;
+  return choices[0].message.content;
+};
