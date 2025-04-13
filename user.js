@@ -51,7 +51,7 @@ const userResult = {
   username: cleanUsername,
   analysis: parsedResult,
 };
-s.stop(`Finish alayzing profile for ${user}...`);
+s.stop(`Finish anlayzing profile for ${user}...`);
 
 const dir = './outputs';
 if (!fs.existsSync(dir)) {

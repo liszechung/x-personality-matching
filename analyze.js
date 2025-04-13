@@ -119,7 +119,7 @@ export const fetchTwitterProfile = async (username) => {
     const data = rawData.data ? rawData.data : rawData;
 
     const parsedData = parseExaUserString(data.results[0].text);
-    if (!parsedData.success || !parsedData.data) {
+    if (!parsedData.success || !parsedData.data || parsedData.data.tweets.length == 0) {
       console.error('Error parsing tweets:', parsedData.error);
       return null;
     }
@@ -198,7 +198,7 @@ ${tweetTexts}
     console.error('Error analyzing tweets:', responseData.error);
     return null;
   }
-  // console.log('responseData');
+   console.log('responseData');
   // console.log(responseData);
 
   const choices = responseData.choices;
@@ -210,7 +210,7 @@ ${tweetTexts}
 
 export const parseAnalysisResponse = (responseContent) => {
   try {
-    const cleanedResponseContent = responseContent.replace(/```json|```/g, '');
+    const cleanedResponseContent = responseContent.replace(/.*```json|```/g, '');
 
     const [scoresPart, explanationPart] = cleanedResponseContent
       .split('====')
@@ -235,17 +235,19 @@ export const parseAnalysisResponse = (responseContent) => {
 };
 
 export const checkCouple = async (user1, user2) => {
+console.log(JSON.stringify(user1.analysis.scores));
+console.log(JSON.stringify(user2.analysis.scores));
   const messages = [
     {
       role: 'system',
       content: dedent`there are 2 persons with OCEAN score like this
 assuming the max score is 100
-    ${user1.analysis.scores.toString()} , ${user2.analysis.scores.toString()}
+    ${JSON.stringify(user1.analysis.scores)} , ${JSON.stringify(user2.analysis.scores)}
 will these 2 person be a match as a couple
       `.trim(),
     },
   ];
-
+//console.log(messages);
   const response = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
